@@ -71,7 +71,7 @@ The current application includes:
 
 ## Architecture
 
-![Multi-agent architecture](docs/multi_agent_architecture_v4.png)
+There is a detailed architecture graph under docs.
 
 The same flow in compact text form:
 
