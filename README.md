@@ -71,27 +71,31 @@ The current application includes:
 
 ## Architecture
 
-There is a detailed architecture graph under docs.
-
-The same flow in compact text form:
+The normal application flow is:
 
 ```text
-Client
-  |
-  +-- ADK Web (development and agent tracing)
-  |
-  +-- FastAPI POST /chat
-          |
-          v
-  architecture_workflow
-          |
-          +-- request_router (when classification is needed)
-          +-- research_planner (public query)
-          +-- document_specialist -> search_documents -> ChromaDB
-          +-- researcher ---------> search_web, fetch_web_page
-          +-- analyst ------------> calculate_data_volume
-          +-- architecture_coordinator (multi-specialist synthesis)
+User
+  -> Streamlit UI
+  -> FastAPI POST /chat
+  -> ADK Runner
+  -> architecture_workflow
+       -> request_router (when classification is needed)
+       -> research_planner (public query, when needed)
+       -> document_specialist -> search_documents -> ChromaDB
+       -> researcher ---------> search_web, fetch_web_page
+       -> analyst ------------> calculate_data_volume
+       -> architecture_coordinator (multi-specialist synthesis)
+  -> FastAPI response
+  -> Streamlit UI
+  -> User
 ```
+
+Two development and testing entry points use the same underlying components:
+
+- **Swagger UI** (`/docs`) sends requests to FastAPI, so it follows the same
+  API-to-ADK path as Streamlit.
+- **ADK Web** invokes the ADK application directly and provides Events and
+  Traces for agent development; it is not part of the Streamlit request path.
 
 Web content and retrieved documents are treated as untrusted data. The agents
 must distinguish sourced facts from assumptions and must not invent citations
