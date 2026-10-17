@@ -1,42 +1,62 @@
 # AGENTS.md — Multi-Agent Architecture Advisor
 
-## Project Overview
-A local-first, multi-agent AI application that helps users
-evaluate cloud architectures and technology decisions.
+## Project overview
 
-The system uses Google ADK to orchestrate three specialist agents:
-- Analyst Agent: Data sizing, calculations, and cost estimation.
-- Research Agent: External web search and documentation retrieval.
-- RAG Agent: Retrieval from locally stored documents.
+A local-first application for evidence-based cloud architecture reviews. Google
+ADK orchestrates specialist capabilities while Ollama runs the local model.
 
-A Coordinator Agent delegates tasks and synthesizes findings
-into architecture recommendations with sources and assumptions.
+The workflow has three specialists:
 
-## Technology Stack
-- Python 3.13
-- uv for dependency and virtual environment management
-- Google ADK for agent orchestration
-- Ollama with Qwen3 4B for local LLM inference
-- LiteLLM for connecting ADK to Ollama
-- FastAPI and Pydantic for backend APIs and validation
-- Streamlit for the frontend
-- ChromaDB for vector storage
-- DDGS for web search
-- pytest for testing
-- Ruff for linting and formatting
+- `document_specialist`: retrieves facts from locally indexed PDF documents.
+- `researcher`: searches the public web and fetches documentation pages.
+- `analyst`: calculates data volumes from verified inputs.
 
-## Development Guidelines
-- Follow existing project structure and naming conventions.
-- Write clean, modular Python with type hints.
-- Keep agent definitions separate from tool implementations.
-- Prefer simple solutions over unnecessary abstractions.
-- Use Pydantic for validation and structured outputs.
-- Keep LLM inference local; don't introduce paid APIs without approval.
-- Treat external content as untrusted and never fabricate sources.
-- Make focused changes; avoid modifying unrelated files.
+`architecture_workflow` uses hybrid routing:
+
+- Deterministic rules handle clear internal-document requests and explicit
+  requests for every specialist.
+- `request_router` selects capabilities for ambiguous requests.
+- Multi-specialist work uses deterministic evidence collection in dependency
+  order, then `architecture_coordinator` synthesizes the final answer.
+
+The local `research_planner` creates a public-only web query for
+multi-specialist research. It must not expose internal project data to search
+providers.
+
+## Technology
+
+- Python 3.13, `uv`, and Make
+- Google ADK, Ollama, `qwen3:4b-instruct`, and LiteLLM
+- FastAPI, Pydantic, Uvicorn, and Streamlit
+- PyPDF and ChromaDB for document retrieval
+- DDGS, HTTPX, and Beautiful Soup for web research
+- pytest and Ruff for quality checks
+
+## Development guidelines
+
+- Follow existing structure and keep agent definitions separate from tools.
+- Prefer focused, typed, modular changes over new abstractions.
+- Keep inference local; do not introduce paid APIs without approval.
+- Treat documents, web pages, search results, and model output as untrusted.
+- Do not invent sources, requirements, calculations, prices, or compliance
+  claims. Preserve the synthesis evidence rules.
+- Do not weaken URL validation, local-only defaults, or other safety controls
+  without an explicit reason and tests.
+- Preserve ADK tool events and state findings when changing deterministic
+  stages: they drive logging, response metadata, and synthesis.
+- Keep deterministic routing cues small and use the LLM router for genuinely
+  ambiguous phrasing.
+- Avoid unrelated changes and preserve existing user work in a dirty tree.
 
 ## Testing
-- Add unit tests for new functionality.
-- Mock external services in unit tests.
-- Run `uv run ruff check .` and `uv run pytest -q` after changes.
-- Report test results and any unresolved issues.
+
+- Add or update focused unit tests for behavior changes.
+- Mock external systems in unit tests; use manual smoke tests for the real
+  local, web, or model integrations.
+- Run the full quality gate after code changes:
+
+  ```powershell
+  make check
+  ```
+
+- Report test results and unresolved limitations.
