@@ -1,0 +1,3 @@
+{
+  "message": "I'm designing an analytics platform for Project Atlas. First, retrieve the internal requirements for daily data ingestion, reporting latency, EU data residency, security, and budget. Then research Google BigQuery's current capabilities using official documentation, including reading the relevant web pages. Finally, calculate the total monthly data ingestion assuming 30 days. Based on all three specialists' findings, recommend whether BigQuery is suitable, explain the main trade-offs, and cite your sources. Consult all three specialist agents before providing your final answer."
+}
