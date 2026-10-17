@@ -1,8 +1,8 @@
 # Multi-Agent Architecture Advisor
 
-A local-first application for evaluating cloud architectures and technology
-decisions. Google ADK coordinates specialist agents, while Ollama runs the
-Qwen3 4B model locally through LiteLLM.
+A local-first application for evidence-based cloud architecture reviews. Google
+ADK coordinates specialist agents, while Ollama runs `qwen3:4b-instruct`
+locally through LiteLLM.
 
 ## What it does
 
@@ -22,36 +22,16 @@ final synthesis.
 
 ### Why hybrid routing?
 
-Deterministic rules handle requests whose intent must be predictable, such as
-clear internal-document questions or an explicit instruction to consult every
-specialist. Other requests go to the LLM router, which can recognize equivalent
-intent across varied natural-language wording and select any combination of
-document retrieval, web research, and calculation.
-
-This balance avoids asking a small local model to classify obvious requests,
-while avoiding a large and fragile keyword list for every possible phrasing. It
-also reduces latency and failure opportunities by running only the specialists
-a request needs. Selected stages execute in dependency-safe order, and explicit
-all-specialist requests remain guaranteed rather than model-dependent.
+Deterministic rules handle intent that must be predictable, such as clear
+internal-document questions or an explicit request for every specialist. Other
+requests go to the LLM router, which can interpret varied wording and select
+document retrieval, web research, and/or calculation.
 
 For multi-specialist assessments, a local structured planner creates a
-public-only query. The workflow then executes document retrieval, web search,
-and page fetching deterministically, prioritizing documentation-like search
-results. This prevents the small local model from skipping mandatory evidence
-collection without tying the workflow to one provider or product.
-Focused research-only questions still use the researcher agent's tool selection.
-
-The current application includes:
-
-- Multi-agent orchestration and tool calling with Google ADK.
-- Local inference with `ollama_chat/qwen3:4b-instruct`; extended thinking is
-  disabled, with response sanitization as a fallback.
-- PDF ingestion, overlapping text chunks, and persistent ChromaDB retrieval.
-- Web search with DDGS and page extraction with HTTPX and Beautiful Soup.
-- A FastAPI interface with conversation sessions, response validation,
-  participating-agent metadata, and safe error responses.
-- A Streamlit chat interface that uses FastAPI as its backend.
-- Unit tests with external services mocked.
+public-only query, then the workflow collects document, web, and calculation
+evidence in dependency-safe order. This avoids relying on a small local model
+to remember mandatory tool calls while keeping focused research-only questions
+flexible.
 
 ## Technology stack
 
@@ -96,6 +76,25 @@ Two development and testing entry points use the same underlying components:
   API-to-ADK path as Streamlit.
 - **ADK Web** invokes the ADK application directly and provides Events and
   Traces for agent development; it is not part of the Streamlit request path.
+
+### Code mental model
+
+```text
+routing.py
+-> decides which capabilities are needed
+
+workflow_stages.py
+-> guarantees evidence collection for complex multi-stage work
+
+agent.py
+-> controls execution order, validation, and synthesis
+
+specialist agent files
+-> define each role, tools, and prompt
+
+synthesis_agent.py
+-> turns collected findings into the final user-facing answer
+```
 
 Web content and retrieved documents are treated as untrusted data. The agents
 must distinguish sourced facts from assumptions and must not invent citations
@@ -145,6 +144,9 @@ On the first run, index the included sample document:
 ```powershell
 uv run python -c "from multi_agent_project.rag.ingestion import ingest_pdf; print(ingest_pdf('data/sample_documents/Internal_atlas_project.pdf'))"
 ```
+
+The generated ChromaDB index is stored under `data/chroma/` and is excluded
+from version control.
 
 Then start the API:
 
@@ -199,17 +201,6 @@ make ui
 Streamlit sends chat requests to `http://127.0.0.1:8001` by default. Override
 the backend when needed by setting the `API_BASE_URL` environment variable.
 
-## Local document retrieval
-
-Index the included sample PDF before asking document-specific questions:
-
-```powershell
-uv run python -c "from multi_agent_project.rag.ingestion import ingest_pdf; print(ingest_pdf('data/sample_documents/Internal_atlas_project.pdf'))"
-```
-
-The ChromaDB index is stored under `data/chroma/` and is intentionally excluded
-from version control.
-
 ## Project layout
 
 ```text
@@ -222,7 +213,7 @@ src/multi_agent_project/
   tools/       deterministic agent tools
 tests/         unit and API tests
 data/          sample documents and generated local vector data
-docs/          detailed development guide
+docs/          development guide and architecture notes
 ```
 
 ## Development
