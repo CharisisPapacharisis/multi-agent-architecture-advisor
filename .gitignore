@@ -19,3 +19,6 @@ data/chroma/
 
 # ADK local state
 .adk/
+
+# IDEs and editors
+.vscode/
